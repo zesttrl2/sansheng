@@ -44,31 +44,31 @@ from file_lock import atomic_json_read, atomic_json_update  # noqa: E402
 from utils import now_iso  # noqa: E402
 
 STATE_ORG_MAP = {
-    'Taizi': '太子', 'Zhongshu': '中书省', 'Menxia': '门下省',
-    'Assigned': '尚书省', 'Next': '尚书省',
-    'Doing': '执行中', 'Review': '尚书省', 'Done': '完成', 'Blocked': '阻塞',
+    'Zongjian': 'AIGC项目总监', 'Zhijian': 'AIGC质检', 'Jiexi': 'AIGC解析剧本',
+    'Assigned': 'AIGC解析剧本', 'Next': 'AIGC解析剧本',
+    'Doing': '执行中', 'Review': 'AIGC解析剧本', 'Done': '完成', 'Blocked': '阻塞',
 }
 
 _STATE_AGENT_MAP = {
-    'Taizi': 'taizi',
-    'Zhongshu': 'zhongshu',
-    'Menxia': 'menxia',
-    'Assigned': 'shangshu',
-    'Review': 'shangshu',
-    'Pending': 'zhongshu',
+    'Zongjian': 'zongjian',
+    'Zhijian': 'zhijian',
+    'Jiexi': 'jiexi',
+    'Assigned': 'jiexi',
+    'Review': 'jiexi',
+    'Pending': 'zongjian',
 }
 
 _ORG_AGENT_MAP = {
-    '礼部': 'libu', '户部': 'hubu', '兵部': 'bingbu',
-    '刑部': 'xingbu', '工部': 'gongbu', '吏部': 'libu_hr',
-    '中书省': 'zhongshu', '门下省': 'menxia', '尚书省': 'shangshu',
+    'AIGC分镜导演': 'fenjing', 'AIGC角色场景道具设计师': 'juesesheji', 'AIGC视频生成': 'shipin',
+    'AIGC图像生成': 'tuxiang', 'AIGC剧本生成': 'juben', 'AIGC人事': 'hr',
+    'AIGC项目总监': 'zongjian', 'AIGC质检': 'zhijian', 'AIGC解析剧本': 'jiexi',
 }
 
 _AGENT_LABELS = {
-    'main': '太子', 'taizi': '太子',
-    'zhongshu': '中书省', 'menxia': '门下省', 'shangshu': '尚书省',
-    'libu': '礼部', 'hubu': '户部', 'bingbu': '兵部', 'xingbu': '刑部',
-    'gongbu': '工部', 'libu_hr': '吏部', 'zaochao': '钦天监',
+    'main': 'AIGC项目总监', 'zongjian': 'AIGC项目总监',
+    'zhijian': 'AIGC质检', 'jiexi': 'AIGC解析剧本',
+    'fenjing': 'AIGC分镜导演', 'juesesheji': 'AIGC角色场景道具设计师', 'shipin': 'AIGC视频生成', 'tuxiang': 'AIGC图像生成',
+    'juben': 'AIGC剧本生成', 'hr': 'AIGC人事', 'zaochao': '钦天监',
 }
 
 MAX_PROGRESS_LOG = 100  # 单任务最大进展日志条数
@@ -213,17 +213,17 @@ def cmd_create(task_id, title, state, org, official, remark=None):
 
 # ── 状态流转合法性校验 ──
 # 只允许文档定义的状态路径:
-# Pending→Taizi→Zhongshu→Menxia→Assigned→Doing→Review→Done
+# Pending→Zongjian→Zhijian→Jiexi→Assigned→Doing→Review→Done
 # 额外: Blocked 可双向切换, Cancelled 从任意非终态可达, Next→Doing
 _VALID_TRANSITIONS = {
-    'Pending':   {'Taizi', 'Cancelled'},
-    'Taizi':     {'Zhongshu', 'Cancelled'},
-    'Zhongshu':  {'Menxia', 'Cancelled'},
-    'Menxia':    {'Assigned', 'Zhongshu', 'Cancelled'},   # 封驳可回中书
+    'Pending':   {'Zongjian', 'Cancelled'},
+    'Zongjian':     {'Zhijian', 'Cancelled'},
+    'Zhijian':  {'Jiexi', 'Cancelled'},
+    'Jiexi':    {'Assigned', 'Zhijian', 'Cancelled'},   # 封驳可回AIGC项目总监
     'Assigned':  {'Doing', 'Next', 'Blocked', 'Cancelled'},
     'Next':      {'Doing', 'Blocked', 'Cancelled'},
     'Doing':     {'Review', 'Blocked', 'Cancelled'},
-    'Review':    {'Done', 'Menxia', 'Doing', 'Cancelled'},  # 可打回重审/重做
+    'Review':    {'Done', 'Zhijian', 'Doing', 'Cancelled'},  # 可打回重审/重做
     'Blocked':   {'Doing', 'Next', 'Assigned', 'Review', 'Cancelled'},  # 解除后回原位
     'Done':      set(),       # 终态
     'Cancelled': set(),       # 终态
